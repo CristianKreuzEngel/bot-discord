@@ -15,7 +15,7 @@ class Slash(commands.Cog):
         await ctx.response.send_message(file=img_principal, embed=my_embed)
     
     @app_commands.command()
-    async def ok(ctx:discord.Interaction):
+    async def ok(self, ctx:discord.Interaction):
         my_embed = discord.Embed(title="Ok.")
         img_principal = discord.File('img/ok.jpg', 'imagem.jpg')
         thumb_principal = discord.File('img/ok.jpg', 'thumb.jpg')

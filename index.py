@@ -17,23 +17,6 @@ async def carregar_commands():
         if arquivos.endswith('.py'):
             await bot.load_extension(f"commands.{arquivos[:-3]}")
 
-# @bot.tree.command()
-# async def wow(ctx:discord.Interaction):
-#     my_embed = discord.Embed(title="WoW")
-#     img_principal = discord.File('img/wow.gif', 'imagem.gif')
-#     my_embed.set_image(url="attachment://imagem.gif")
-#     await ctx.response.send_message(file=img_principal, embed=my_embed)
-
-# @bot.tree.command()
-# async def ok(ctx:discord.Interaction):
-#     my_embed = discord.Embed(title="Ok.")
-#     img_principal = discord.File('img/ok.jpg', 'imagem.jpg')
-#     thumb_principal = discord.File('img/ok.jpg', 'thumb.jpg')
-#     my_embed.set_thumbnail(url="attachment://thumb.jpg")
-#     my_embed.set_image(url="attachment://imagem.jpg")
-#     my_embed.description = "ok"
-#     await ctx.response.send_message(files=[img_principal, thumb_principal], embed=my_embed)
-
 @bot.command()
 async def sync(ctx:commands.Context):
     if ctx.author.id == 292079306409246730:
@@ -76,9 +59,5 @@ async def on_member_remove(membro:discord.Member):
     my_embed.set_image(url="attachment://imagem.jpg")
     my_embed.description = ""
     await channel.send(files=[img_principal, thumb_principal], embed=my_embed)
-
-    
-
-
 
 bot.run(os.environ['TOKEN'])
