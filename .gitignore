@@ -1,2 +1,5 @@
 .env
 commands/__pycache__
+.idea
+squarecloud.app
+bot-discord.zip

@@ -3,22 +3,25 @@ from discord.ext import commands
 from discord import app_commands
 
 from dotenv import load_dotenv
-load_dotenv();
+load_dotenv()
 
 import os
 
 permission = discord.Intents.default()
 permission.message_content = True
 permission.members = True
+permission.voice_states = True
 bot = commands.Bot(command_prefix=".", intents=permission)
 
 async def carregar_commands():
     for arquivos in os.listdir('commands'):
+        print(arquivos)
         if arquivos.endswith('.py'):
             await bot.load_extension(f"commands.{arquivos[:-3]}")
 
 @bot.command()
 async def sync(ctx:commands.Context):
+    print(ctx.author.id)
     if ctx.author.id == 292079306409246730:
         sics = await bot.tree.sync()
         await ctx.reply(f"{len(sics)} comandos foram sincronizados com sucesso")
@@ -29,6 +32,7 @@ async def sync(ctx:commands.Context):
 @bot.event
 async def on_ready():
     await carregar_commands()
+    await bot.tree.sync()
     print("Bah tchê estou aí na atividade")
 
 # @bot.event
@@ -36,7 +40,8 @@ async def on_ready():
 #     autor = msg.author
 #     if autor.bot:
 #         return
-#     await msg.reply('você é boiola')
+#     if autor.id == 895417703022616577:
+#         await msg.reply('você é boiola')
 
 @bot.event
 async def on_member_join(membro:discord.Member):
