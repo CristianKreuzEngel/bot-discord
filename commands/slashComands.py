@@ -113,15 +113,18 @@ class Slash(commands.Cog):
     async def stop(self, ctx: discord.Interaction):
         voice_client = ctx.guild.voice_client
         await ctx.response.defer() 
-        if voice_client and voice_client.is_playing():
-            voice_client.stop()
-            self.queue.clear()
-            await voice_client.disconnect()
-            await ctx.followup.send("Pois é, também estava de saco cheio, obrigado por parar.")
-            
-        else:
-            await ctx.followup.send("Jovem se é besta?! Nenhumaa música está tocando no momento.")
         
+        if voice_client:
+            if voice_client.is_playing() or voice_client.is_paused():
+                voice_client.stop()
+                self.queue.clear()
+                await voice_client.disconnect()
+                await ctx.followup.send("Pois é, também estava de saco cheio, obrigado por parar e sair.")
+            else:
+                 await ctx.followup.send("Jovem se é besta?! Nenhuma música está tocando no momento.")
+                 
+        else:
+            await ctx.followup.send("Eu nem estou no canal de voz, te ligue bico de luz!")
 
 async def setup(bot):
     await bot.add_cog(Slash(bot))
