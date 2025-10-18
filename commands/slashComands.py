@@ -9,7 +9,17 @@ FFMPEG_OPTIONS = {
     'options': '-vn'
 }
 
-YDL_OPTIONS = {'format': 'bestaudio', 'noplaylist': True}
+YDL_OPTIONS = {
+    'format': 'bestaudio',
+    'noplaylist': True, 
+    'http_headers': {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+    },
+    'skip_download': True,
+    'age_limit': 999,
+    'cookiesfrombrowser': ('firefox',),
+    'geo_bypass': True,
+}
 
 class Slash(commands.Cog):
     def __init__(self, bot):
@@ -35,7 +45,7 @@ class Slash(commands.Cog):
         await ctx.response.send_message(files=[img_principal, thumb_principal], embed=my_embed)
 
     @app_commands.command()
-    async def play(self, ctx: Interaction, *, url: str):
+    async def play(self, ctx: Interaction, *, url: str): # Argumento é 'url'
         if ctx.user.voice is None:
             await ctx.response.send_message(
                 "O teu, entre em canal de voz para executar o comando! Te ligue bico de luz!"
@@ -52,17 +62,26 @@ class Slash(commands.Cog):
 
         await ctx.response.defer()
 
+        if url.startswith(('http', 'www.')):
+            source_url = url # Usa o link puro
+        else:
+            source_url = f"ytsearch:{url}" 
         with yt_dlp.YoutubeDL(YDL_OPTIONS) as ydl:
-            info = ydl.extract_info(f"ytsearch:{url}", download=False)
+            info = ydl.extract_info(source_url, download=False)
+            
             if 'entries' in info and info['entries']:
                 info = info['entries'][0]
-                url = info['url']
+        
+            try:
+                final_url = info['url']
                 title = info['title']
-                self.queue.append((url, title))
-                await ctx.followup.send(f"Adicionado na fila, jovem!: {title}")
-            else:
-                await ctx.followup.send("Não consegui encontrar o vídeo. Por favor, verifique o URL.")
+            except KeyError:
+                await ctx.followup.send("Não consegui encontrar o vídeo. Por favor, verifique o URL ou o termo de busca.")
+                return
 
+        self.queue.append((final_url, title))
+        await ctx.followup.send(f"Adicionado na fila, jovem!: {title}")
+        
         if not voice_client.is_playing():
             await self.play_next(ctx)
 
@@ -78,13 +97,31 @@ class Slash(commands.Cog):
     @app_commands.command()
     async def pular(self, ctx: discord.Interaction):
         voice_client = ctx.guild.voice_client
+        
+        await ctx.response.defer() 
+        
         if voice_client and voice_client.is_playing():
             voice_client.stop()
-            await self.play_next(ctx)
-            await ctx.response.send_message("Música intancável. Por isso está sendo pulada.")
+            
+            await self.play_next(ctx) 
+            
+            await ctx.followup.send("Música é uma porcaria. Por isso está sendo pulada.")
+            
         else:
-            await ctx.response.send_message("Nenhuma música está tocando no momento.")
-
+            await ctx.followup.send("Nenhuma música está tocando no momento.")
+    @app_commands.command()
+    async def stop(self, ctx: discord.Interaction):
+        voice_client = ctx.guild.voice_client
+        await ctx.response.defer() 
+        if voice_client and voice_client.is_playing():
+            voice_client.stop()
+            self.queue.clear()
+            await voice_client.disconnect()
+            await ctx.followup.send("Pois é, também estava de saco cheio, obrigado por parar.")
+            
+        else:
+            await ctx.followup.send("Jovem se é besta?! Nenhumaa música está tocando no momento.")
+        
 
 async def setup(bot):
     await bot.add_cog(Slash(bot))
