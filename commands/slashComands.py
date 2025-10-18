@@ -86,11 +86,12 @@ class Slash(commands.Cog):
             await self.play_next(ctx)
 
     async def play_next(self, ctx: Interaction):
+        channel = ctx.channel
         if self.queue:
             url, title = self.queue.pop(0)
             source = discord.FFmpegPCMAudio(url, **FFMPEG_OPTIONS)
             ctx.guild.voice_client.play(source, after=lambda _: self.bot.loop.create_task(self.play_next(ctx)))
-            await ctx.followup.send(f"Está tocando agora: {title}")
+            await channel.send(f"Está tocando agora: {title}")
         elif not ctx.guild.voice_client.is_playing():
             await ctx.followup.send("Acabou as músicas na fila meu jovem!!")
 
@@ -126,5 +127,52 @@ class Slash(commands.Cog):
         else:
             await ctx.followup.send("Eu nem estou no canal de voz, te ligue bico de luz!")
 
+
+    @app_commands.command(
+        name="votar", 
+        description="Cria uma enquete com até 5 opções para os membros votarem."
+    )
+    @app_commands.describe(
+        titulo="O tema ou pergunta da votação.",
+        opcao1="A primeira opção de voto.",
+        opcao2="A segunda opção de voto.",
+        opcao3="A terceira opção de voto (Opcional).",
+        opcao4="A quarta opção de voto (Opcional).",
+        opcao5="A quinta opção de voto (Opcional)."
+    )
+    async def voto(self, ctx: discord.Interaction, 
+                   titulo: str, 
+                   opcao1: str, 
+                   opcao2: str, 
+                   opcao3: str = None, 
+                   opcao4: str = None, 
+                   opcao5: str = None):
+        
+        emojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣']
+        
+        opcoes = [opcao1, opcao2, opcao3, opcao4, opcao5]
+        opcoes_validas = [op for op in opcoes if op is not None]
+        
+        if len(opcoes_validas) < 2:
+            await ctx.response.send_message("Você precisa de pelo menos duas opções para criar uma votação jovem!", ephemeral=True)
+            return
+
+        descricao = ""
+        for i, opcao in enumerate(opcoes_validas):
+            descricao += f"{emojis[i]} **{opcao}**\n"
+        
+        embed = discord.Embed(
+            title=f"🗳️ VOTAÇÃO: {titulo}",
+            description=descricao,
+            color=discord.Color.blue()
+        )
+        embed.set_footer(text=f"Votação iniciada por {ctx.user.display_name}")
+        
+        await ctx.response.defer()
+        
+        mensagem = await ctx.followup.send(embed=embed)
+        
+        for i in range(len(opcoes_validas)):
+            await mensagem.add_reaction(emojis[i])
 async def setup(bot):
     await bot.add_cog(Slash(bot))
