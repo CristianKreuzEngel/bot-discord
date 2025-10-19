@@ -1,6 +1,8 @@
 import discord
 import yt_dlp
 import yt_dlp as youtube_dl
+import aiohttp
+import random
 from discord import app_commands, Interaction
 from discord.ext import commands
 
@@ -174,5 +176,61 @@ class Slash(commands.Cog):
         
         for i in range(len(opcoes_validas)):
             await mensagem.add_reaction(emojis[i])
+            
+            
+    async def fetch_meme_data(self):
+        subreddits = ['SemContexto','brdev', 'eu_nvr', 'animebrasil', 'farialimabets',  'brasil'] 
+        subreddit_escolhido = random.choice(subreddits)
+        url = f"https://www.reddit.com/r/{subreddit_escolhido}/hot.json"
+        
+        async with aiohttp.ClientSession() as session:
+            headers = {'User-Agent': 'DiscordBot/1.0'} 
+            async with session.get(url, headers=headers) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    
+                    posts = [
+                        post['data'] 
+                        for post in data['data']['children'] 
+                        if post['data'].get('post_hint') == 'image'
+                    ]
+                    
+                    if not posts:
+                        return None, None, None, "Erro: Não encontrei imagens válidas nesta lista do Reddit. Tentarei de novo!"
+                        
+                    meme = random.choice(posts)
+                    titulo = meme['title']
+                    
+                    link_imagem = meme.get('url_overridden_by_dest')
+                    permalink = f"https://reddit.com{meme['permalink']}"
+                    
+                    if not link_imagem:
+                         return None, None, None, "Erro: O post escolhido não tinha link de imagem válido."
+                         
+                    return titulo, link_imagem, permalink, None
+                else:
+                    return None, None, None, f"Erro ao acessar a API do Reddit: Status {response.status}"
+                
+    @app_commands.command(name="meme", description="Puxa um meme aleatório de subreddits populares do Reddit.")
+    async def meme(self, ctx: discord.Interaction):
+        
+        await ctx.response.defer()
+        titulo, link_imagem, permalink, erro = await self.fetch_meme_data()
+        
+        if erro:
+            await ctx.followup.send(erro, ephemeral=True)
+            return
+
+        embed = discord.Embed(
+            title=titulo,
+            url=permalink,
+            color=discord.Color.red()
+        )
+        
+        embed.set_image(url=link_imagem)
+        embed.set_footer(text="Fonte: Reddit via sua humilde máquina.")
+
+        await ctx.followup.send(embed=embed)
+        
 async def setup(bot):
     await bot.add_cog(Slash(bot))
